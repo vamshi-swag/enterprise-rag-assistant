@@ -1,11 +1,12 @@
 from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
 import shutil
+import os
 from backend.rag import create_rag_pipeline
 
 app = FastAPI()
 
-rag_pipeline = None  # lazy load
+rag_pipeline = None
 
 class Query(BaseModel):
     query: str
@@ -23,7 +24,7 @@ async def upload_file(file: UploadFile = File(...)):
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # ✅ Build RAG ONLY when needed (fix memory crash)
+    # ✅ Lazy load (important for memory)
     rag_pipeline = create_rag_pipeline(file_path)
 
     return {"message": "File processed"}
