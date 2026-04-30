@@ -3,10 +3,10 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from dotenv import load_dotenv
-load_dotenv()
-
-from groq import Groq
 import os
+from groq import Groq
+
+load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
@@ -20,7 +20,7 @@ def generate_answer(query, context):
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
-            {"role": "system", "content": "Answer based on context."},
+            {"role": "system", "content": "Answer ONLY based on provided context."},
             *chat_history,
             {"role": "user", "content": f"Context:\n{context}"}
         ]
@@ -37,13 +37,21 @@ def create_rag_pipeline(file_path):
     loader = PyPDFLoader(file_path)
     docs = loader.load()
 
-    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+    # ✅ Reduced memory usage
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=300,
+        chunk_overlap=30
+    )
     split_docs = splitter.split_documents(docs)
 
-    embeddings = HuggingFaceEmbeddings()
+    # ✅ Lightweight embeddings (IMPORTANT for Render)
+    embeddings = HuggingFaceEmbeddings(
+        model_name="all-MiniLM-L6-v2"
+    )
 
     vectordb = Chroma.from_documents(split_docs, embeddings)
-    retriever = vectordb.as_retriever()
+
+    retriever = vectordb.as_retriever(search_kwargs={"k": 2})  # less memory
 
     def rag_pipeline(query):
         docs = retriever.get_relevant_documents(query)

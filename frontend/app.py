@@ -1,55 +1,55 @@
 import streamlit as st
 import requests
 
-st.set_page_config(page_title="RAG AI", layout="wide")
+API_URL = "https://YOUR-RENDER-URL.onrender.com"  # 🔥 change this
 
+st.set_page_config(page_title="RAG AI", layout="wide")
 st.title("🤖 RAG AI Assistant")
 
-# Memory
+# memory
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Upload
+# upload
 uploaded_file = st.file_uploader("📄 Upload PDF", type="pdf")
 
 if uploaded_file:
-    res = requests.post(
-        "http://127.0.0.1:8000/upload",
-        files={"file": uploaded_file}
-    )
+    files = {"file": (uploaded_file.name, uploaded_file, "application/pdf")}
+    res = requests.post(f"{API_URL}/upload", files=files)
     st.success("File uploaded!")
 
-# Chat UI
+# chat history
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
-# Input
+# input
 prompt = st.chat_input("Ask something...")
 
 if prompt:
-    # show user message
     st.session_state.messages.append({"role": "user", "content": prompt})
-    
+
     with st.chat_message("user"):
         st.write(prompt)
 
-    # get response
+    # ✅ FIXED (JSON instead of params)
     res = requests.post(
-        "http://127.0.0.1:8000/chat",
-        params={"query": prompt}
+        f"{API_URL}/chat",
+        json={"query": prompt}
     )
 
-    answer = res.json().get("answer", "")
-    sources = res.json().get("sources", [])
+    data = res.json()
 
-    st.write(answer)
+    answer = data.get("answer", "")
+    sources = data.get("sources", [])
 
-    if sources:
-        st.caption("Sources: " + ", ".join(sources))
-
-    # show assistant
     with st.chat_message("assistant"):
         st.write(answer)
 
-    st.session_state.messages.append({"role": "assistant", "content": answer})
+        if sources:
+            st.caption("Sources: " + ", ".join(sources))
+
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": answer
+    })
