@@ -1,8 +1,7 @@
 fastapi
-uvicorn
+uvicorn[standard]
 langchain
 langchain-community
-langchain-openai
 chromadb
 pypdf
 python-dotenv
