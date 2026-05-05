@@ -4,3 +4,5 @@ __pycache__/
 .env
 db/
 temp_*.pdf
+sample.pdf
+db/
